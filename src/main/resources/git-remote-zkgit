@@ -1,0 +1,5 @@
+#!/bin/bash
+
+curr_dir=$(pwd)
+
+java -jar /etc/zkgit/zkgithelper.jar "$@" "$curr_dir" | tee /dev/tty
