@@ -1,10 +1,10 @@
 package se.miun.dt133g.zkgithelper;
 
-import zkgithelper.git.GitHandler;
-import zkgithelper.files.FileUtils;
-import zkgithelper.connection.GitConnection;
-import zkgithelper.support.AppConfig;
-import zkgithelper.support.IoUtils;
+import se.miun.dt133g.zkgithelper.git.GitHandler;
+import se.miun.dt133g.zkgithelper.files.FileUtils;
+import se.miun.dt133g.zkgithelper.connection.GitConnection;
+import se.miun.dt133g.zkgithelper.support.AppConfig;
+import se.miun.dt133g.zkgithelper.support.IoUtils;
 
 import java.util.Scanner;
 

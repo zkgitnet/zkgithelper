@@ -1,7 +1,7 @@
-package zkgithelper.files;
+package se.miun.dt133g.zkgithelper.files;
 
-import zkgithelper.support.IoUtils;
-import zkgithelper.support.AppConfig;
+import se.miun.dt133g.zkgithelper.support.IoUtils;
+import se.miun.dt133g.zkgithelper.support.AppConfig;
 
 import java.io.BufferedOutputStream;
 import java.io.FileInputStream;

@@ -1,4 +1,4 @@
-package zkgithelper.support;
+package se.miun.dt133g.zkgithelper.support;
 
 public final class AppConfig {
 

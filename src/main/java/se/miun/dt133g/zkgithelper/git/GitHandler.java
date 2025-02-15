@@ -1,9 +1,9 @@
-package zkgithelper.git;
+package se.miun.dt133g.zkgithelper.git;
 
-import zkgithelper.connection.GitConnection;
-import zkgithelper.files.FileUtils;
-import zkgithelper.support.AppConfig;
-import zkgithelper.support.IoUtils;
+import se.miun.dt133g.zkgithelper.connection.GitConnection;
+import se.miun.dt133g.zkgithelper.files.FileUtils;
+import se.miun.dt133g.zkgithelper.support.AppConfig;
+import se.miun.dt133g.zkgithelper.support.IoUtils;
 
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;

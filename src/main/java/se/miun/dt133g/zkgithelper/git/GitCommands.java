@@ -1,4 +1,4 @@
-package zkgithelper.git;
+package se.miun.dt133g.zkgithelper.git;
 
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.revwalk.RevWalk;

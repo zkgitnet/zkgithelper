@@ -1,4 +1,4 @@
-package zkgithelper.support;
+package se.miun.dt133g.zkgithelper.support;
 
 import java.util.Scanner;
 import java.io.OutputStream;

@@ -1,7 +1,7 @@
-package zkgithelper.connection;
+package se.miun.dt133g.zkgithelper.connection;
 
-import zkgithelper.support.IoUtils;
-import zkgithelper.support.AppConfig;
+import se.miun.dt133g.zkgithelper.support.IoUtils;
+import se.miun.dt133g.zkgithelper.support.AppConfig;
 
 import java.io.BufferedReader;
 import java.io.IOException;
