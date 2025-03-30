@@ -68,10 +68,12 @@ public final class GitHandler {
 
     public void setRepoName(final String repoName) {
         this.repoName = repoName;
+        IoUtils.INSTANCE.trace("RepoName: " + repoName);
     }
 
     public void setTmpRepoPath(final String path) {
         this.tmpRepoPath = path;
+        IoUtils.INSTANCE.trace("tmpRepoPath: " + path);
         try {
             this.tmpRepository = new FileRepositoryBuilder()
                 .setGitDir(new File(path))
@@ -88,6 +90,7 @@ public final class GitHandler {
 
     public void setRepoPath(final String path) {
         this.repoPath = path;
+        IoUtils.INSTANCE.trace("repoPath: " + path);
         try {
             this.repository = new FileRepositoryBuilder()
                 .setGitDir(new File(path + "/.git"))
@@ -119,9 +122,14 @@ public final class GitHandler {
         boolean forPush = line.contains(AppConfig.GIT_FOR_PUSH);
 
         try {
-            GitConnection.INSTANCE.requestFile(repoName + AppConfig.ZIP_SUFFIX,
-                                               calculateRepoSignature(!forPush));
-            FileUtils.INSTANCE.unzipDirectory(repoName + AppConfig.ZIP_SUFFIX, tmpRepoPath);
+            IoUtils.INSTANCE.trace("Requesting file from doList");
+            if (GitConnection.INSTANCE.requestFile(repoPath,
+                                                   calculateRepoSignature(!forPush))
+                .contains(AppConfig.STATUS_REPO_UPTODATE)) {
+                IoUtils.INSTANCE.fatal(AppConfig.GIT_END);
+                return;
+            }
+            //FileUtils.INSTANCE.unzipDirectory(repoName + AppConfig.ZIP_SUFFIX, tmpRepoPath);
         
             List<Ref> refs = getRefs();
             //IoUtils.INSTANCE.trace("Number of refs fetched: " + refs.size());
@@ -178,14 +186,13 @@ public final class GitHandler {
                         IoUtils.INSTANCE.trace(AppConfig.ERROR_FIRST_REMOTE_BRANCH_FAIL);
                     }
                 }
-                FileUtils.INSTANCE.zipDirectory(tmpRepoPath,
-                                                repoName);
-                String response = GitConnection.INSTANCE.sendFile(repoName
-                                                                  + AppConfig.ZIP_SUFFIX,
+                //FileUtils.INSTANCE.zipDirectory(tmpRepoPath, repoName);
+                IoUtils.INSTANCE.trace("tmpRepo: " + tmpRepoPath + ", repoName: " + repoName);
+                String response = GitConnection.INSTANCE.sendFile(repoPath,
                                                                   calculateRepoSignature(true));
 
                 if (response == null
-                    || !response.equals(AppConfig.COMMAND_SUCCESS)) {
+                    || !response.contains(AppConfig.COMMAND_SUCCESS)) {
                     IoUtils.INSTANCE.fatal(AppConfig.ERROR_REPO_TRANSFER_FAILED
                                            + line);
                 } else {
@@ -456,14 +463,16 @@ public final class GitHandler {
             Iterable<RevCommit> commits = git.log().call();
             
             List<String> commitHashes = StreamSupport.stream(commits.spliterator(), false)
-                .skip(includeCurrentCommit ? 0 : 1)
+                //.skip(includeCurrentCommit ? 0 : 1)
                 .map(RevCommit::getId)
                 .map(ObjectId::getName)
                 .sorted()
                 .collect(Collectors.toList());
             
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            IoUtils.INSTANCE.trace("Size: " + commitHashes.size());
             for (String hash : commitHashes) {
+                //IoUtils.INSTANCE.trace(hash);
                 digest.update(hash.getBytes());
             }
             byte[] combinedHashBytes = digest.digest();
@@ -471,6 +480,7 @@ public final class GitHandler {
             for (byte b : combinedHashBytes) {
                 sb.append(String.format("%02x", b));
             }
+            IoUtils.INSTANCE.trace(sb.toString());
             return sb.toString();
         } catch (NoSuchAlgorithmException | GitAPIException e) {
             return null;

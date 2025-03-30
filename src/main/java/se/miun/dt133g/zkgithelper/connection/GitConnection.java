@@ -36,7 +36,7 @@ public final class GitConnection {
             IoUtils.INSTANCE.fatal(AppConfig.ERROR_CLIENT_NOT_RUNNING);
         }
         String serverStatus = checkServerStatus();
-        if (serverStatus.equals(AppConfig.COMMAND_SUCCESS)) {
+        if (serverStatus.contains(AppConfig.COMMAND_SUCCESS)) {
             IoUtils.INSTANCE.trace(AppConfig.STATUS_CLIENT_RUNNING);
         } else {
             IoUtils.INSTANCE.fatal(AppConfig.ERROR_SERVER_NOT_CONNECTED
@@ -99,6 +99,7 @@ public final class GitConnection {
             writer.println(AppConfig.COMMAND_SEND + " " + filePath + " " + signature);
 
             String serverResponse = reader.readLine();
+            IoUtils.INSTANCE.trace("serverResponse: " + serverResponse);
             return serverResponse;
 
         } catch (UnknownHostException e) {
@@ -117,18 +118,19 @@ public final class GitConnection {
              BufferedReader reader = new BufferedReader(
                 new InputStreamReader(socket.getInputStream()))) {
 
-            IoUtils.INSTANCE.trace(AppConfig.STATUS_REQUEST_BEGIN);
+            IoUtils.INSTANCE.trace(AppConfig.STATUS_REQUEST_BEGIN + " " + fileName + " " + signature);
             writer.println(AppConfig.COMMAND_REQUEST + " " + fileName + " " + signature);
 
             String serverResponse = reader.readLine();
+            IoUtils.INSTANCE.trace("serverResponse: " + serverResponse);
 
             if (serverResponse.contains(AppConfig.COMMAND_SUCCESS)) {
-                IoUtils.INSTANCE.trace(AppConfig.STATUS_REQUEST_FINISH);
-            } else {
                 if (serverResponse.contains(AppConfig.STATUS_REPO_UPTODATE)) {
                     IoUtils.INSTANCE.trace(AppConfig.STATUS_REQUEST_UPTODATE);
+                } else {
+                    IoUtils.INSTANCE.trace(AppConfig.STATUS_REQUEST_FINISH);
                 }
-            }
+            } 
             
             return serverResponse;
 
