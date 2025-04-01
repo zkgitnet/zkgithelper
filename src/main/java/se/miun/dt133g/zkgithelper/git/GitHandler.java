@@ -132,12 +132,12 @@ public final class GitHandler {
             //FileUtils.INSTANCE.unzipDirectory(repoName + AppConfig.ZIP_SUFFIX, tmpRepoPath);
         
             List<Ref> refs = getRefs();
-            //IoUtils.INSTANCE.trace("Number of refs fetched: " + refs.size());
+            IoUtils.INSTANCE.trace("Number of refs fetched: " + refs.size());
 
             for (Ref ref : refs) {
                 String refName = ref.getName();
                 String refObjectId = ref.getObjectId().getName();
-                //IoUtils.INSTANCE.trace("Processing ref - Name: " + refName + ", ObjectId: " + refObjectId);
+                IoUtils.INSTANCE.trace("Processing ref - Name: " + refName + ", ObjectId: " + refObjectId);
                 IoUtils.INSTANCE.write(refObjectId + AppConfig.SPACE_SEPARATOR + refName);
             }
 
@@ -145,7 +145,7 @@ public final class GitHandler {
                 Ref head = repository.exactRef(AppConfig.GIT_HEAD);
                 if (head != null) {
                     String headTargetName = head.getTarget().getName();
-                    //IoUtils.INSTANCE.trace("HEAD Ref - Target Name: " + headTargetName);
+                    IoUtils.INSTANCE.trace("HEAD Ref - Target Name: " + headTargetName);
                     IoUtils.INSTANCE.write(AppConfig.AT_SEPARATOR + headTargetName + AppConfig.SPACE_SEPARATOR + AppConfig.GIT_HEAD);
                 } else {
                     IoUtils.INSTANCE.trace(AppConfig.STATUS_NO_DEFAULT_BRANCH);
@@ -173,9 +173,9 @@ public final class GitHandler {
             if (src.equals(AppConfig.GIT_END)) {
                 delete(dst);
             } else {
-                push(src, dst);
                 copyAllObjects(Paths.get(repository.getDirectory().toString(), AppConfig.GIT_OBJECTS),
                                Paths.get(tmpRepoPath, AppConfig.GIT_OBJECTS));
+                push(src, dst);
                 if (firstPush) {
                     Ref remoteHead = repository.exactRef(AppConfig.GIT_HEAD);
                     if (remoteHead != null) {
@@ -219,7 +219,7 @@ public final class GitHandler {
                 
                 // Check if the object already exists at the target path
                 if (Files.exists(targetPath)) {
-                    //IoUtils.INSTANCE.trace("Object already exists at " + targetPath.toString() + ", skipping copy.");
+                    IoUtils.INSTANCE.trace("Object already exists at " + targetPath.toString() + ", skipping copy.");
                     return;  // Skip copying if the object already exists
                 }
 
@@ -229,7 +229,7 @@ public final class GitHandler {
                 // Copy the object file to the target path, replacing any existing files
                 Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
                 
-                //IoUtils.INSTANCE.trace("Copied object file from " + sourcePath.toString() + " to " + targetPath.toString());
+                IoUtils.INSTANCE.trace("Copied object file from " + sourcePath.toString() + " to " + targetPath.toString());
                 
             } catch (IOException e) {
                 IoUtils.INSTANCE.fatal("Failed to copy object: " + sourcePath.toString() + " - " + e.getMessage());
@@ -275,14 +275,8 @@ public final class GitHandler {
 
         List<ObjectId> objects;
         try {
-            Iterable<RevCommit> commits = git.log().add(repository.resolve(src)).call();
-        
-            // Create a stream from the Iterable
-            objects = StreamSupport.stream(commits.spliterator(), false)
-                .map(RevCommit::getId)
-                .collect(Collectors.toList());
-                
-        } catch (GitAPIException | IOException e) {
+            objects = getGitObjects(repoPath);   
+        } catch (IOException e) {
             e.printStackTrace();
             return;
         }
@@ -319,6 +313,30 @@ public final class GitHandler {
         }
     }
 
+    private List<ObjectId> getGitObjects(String gitDir) throws IOException {
+        List<ObjectId> objects = new ArrayList<>();
+        File objectsDir = new File(gitDir + "/.git/", "objects");
+
+        if (!objectsDir.exists() || !objectsDir.isDirectory()) {
+            throw new IOException("Not a valid Git objects directory: " + objectsDir.getAbsolutePath());
+        }
+
+        Files.walk(Paths.get(objectsDir.getAbsolutePath()))
+             .filter(Files::isRegularFile)
+             .map(path -> path.getParent().getFileName() + path.getFileName().toString())
+             .map(hash -> {
+                 try {
+                     return ObjectId.fromString(hash);
+                 } catch (IllegalArgumentException e) {
+                     return null;
+                 }
+             })
+             .filter(obj -> obj != null)
+             .collect(Collectors.toCollection(() -> objects));
+
+        return objects;
+    }
+
 
     private void putObject(final ObjectId sha) throws IOException {
         // Determine the path of the object file in the original repository
@@ -341,11 +359,11 @@ public final class GitHandler {
             Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
 
             // Optional: Trace the copied file path
-            //IoUtils.INSTANCE.trace("Copied object file from " + sourcePath.toString() + " to " + targetPath.toString());
+            IoUtils.INSTANCE.trace("Copied object file from " + sourcePath.toString() + " to " + targetPath.toString());
 
         } catch (IOException e) {
-            e.printStackTrace();
-            IoUtils.INSTANCE.fatal("putObject ERROR: " + e.getMessage());
+            //e.printStackTrace();
+            IoUtils.INSTANCE.trace("putObject ERROR: " + e.getMessage());
         }
     }
 
@@ -398,10 +416,11 @@ public final class GitHandler {
     }
 
     private String writeRef(String sha, String ref, boolean force) {
+        IoUtils.INSTANCE.trace("sha: " + sha + ", ref: " + ref);
         Ref oldRef = refs.get(ref);
         if (oldRef != null) {
             try {
-                // Convert SHA to ObjectId                                                                                                                       
+                IoUtils.INSTANCE.trace("oldRef is not null");
                 ObjectId newObjectId = ObjectId.fromString(sha);
                 ObjectId oldObjectId = oldRef.getObjectId();
 
@@ -418,7 +437,8 @@ public final class GitHandler {
         } else {
 
             try {
-                // Use the correct method to update ref                                                                                                              
+                IoUtils.INSTANCE.trace("oldRef is null");
+                
                 RefUpdate refUpdate = tmpRepository.updateRef(ref);
                 refUpdate.setNewObjectId(ObjectId.fromString(sha));
                 refUpdate.setForceUpdate(force);  // Set force update if necessary                                                                                    
