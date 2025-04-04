@@ -8,25 +8,32 @@ import se.miun.dt133g.zkgithelper.support.IoUtils;
 
 import java.util.Scanner;
 
+
+/**
+ * Entry point for the ZkGitHelper application, responsible for managing a Git-like
+ * remote interaction over a custom protocol. It initializes the Git connection,
+ * prepares the repository environment, and processes input commands.
+ * @author Leif Rogell
+ */
 public final class ZkGitHelper {
 
     private ZkGitHelper() { }
 
+    /**
+     * Launches the application, sets up remote connection parameters and repository info,
+     * then enters a loop to handle incoming Git-like commands (push, fetch, list, etc.).
+     * @param args Command-line arguments: [0] is unused, [1] is destination port, [2] is target repository directory
+     */
     public static void main(final String[] args) {
         Scanner scanner = IoUtils.INSTANCE.getScanner();
-
-        /*for (String arg : args) {
-            IoUtils.INSTANCE.trace("arg: " + arg);
-            }*/
 
         GitConnection.INSTANCE.setDstPort(args[1]);
         GitConnection.INSTANCE.ensureConnected();
 
         String repoName = GitHandler.INSTANCE.extractRepoName(args[1]);
         String dirName = GitHandler.INSTANCE.extractRepoName(args[2]);
-        String repoPath = repoName.equals(dirName)
-            ? args[2] : args[2] + "/" + repoName;
-        
+        String repoPath = repoName.equals(dirName) ? args[2] : args[2] + "/" + repoName;
+
         GitHandler.INSTANCE.setRepoName(repoName);
         GitHandler.INSTANCE.setRepoPath(repoPath);
         GitHandler.INSTANCE.setTmpRepoPath(FileUtils.INSTANCE.createTmpDirectory(repoName));
@@ -34,7 +41,6 @@ public final class ZkGitHelper {
 
         while (true) {
             String line = scanner.nextLine();
-            IoUtils.INSTANCE.trace("ZkGitHelper line: " + line);
 
             if (line.equals(AppConfig.GIT_CAPABILITIES)) {
                 IoUtils.INSTANCE.write(AppConfig.GIT_PUSH);

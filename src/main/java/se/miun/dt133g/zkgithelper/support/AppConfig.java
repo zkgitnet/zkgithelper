@@ -1,5 +1,12 @@
 package se.miun.dt133g.zkgithelper.support;
 
+/**
+ * Defines application-wide constants used throughout the ZkGitHelper system.
+ * This utility class contains string constants for Git-related commands,
+ * status and error messages, file system configurations, and formatting symbols.
+ * It is not intended to be instantiated.
+ * @author Leif Rogell
+ */
 public final class AppConfig {
 
     private AppConfig() {
@@ -10,7 +17,7 @@ public final class AppConfig {
     public static final String COMMAND_SUCCESS = "SUCCESS";
 
     public static final String ERROR_KEY = "ERROR";
-    
+
     public static final String COMMAND_STATUS = "STATUS";
 
     public static final String COMMAND_SEND = "SEND";
@@ -21,7 +28,7 @@ public final class AppConfig {
 
     // Paths configuration
     public static final String JAVA_TMP = "java.io.tmpdir";
-    
+
     public static final String TMP_PREFIX = "zkgit-tmp-";
 
     public static final String REFS_PATH = "refs";
@@ -36,7 +43,7 @@ public final class AppConfig {
     public static final String GIT_FOR_PUSH = "for-push";
 
     public static final String GIT_FETCH = "fetch";
-    
+
     public static final String GIT_LIST = "list";
 
     public static final String GIT_HEAD = "HEAD";
@@ -57,8 +64,9 @@ public final class AppConfig {
     public static final String CONN_LOCALHOST = "localhost";
 
     // Error messages
-    public static final String ERROR_CLIENT_NOT_RUNNING = "ZK Git - client port not open - client not running or wrong port configured";
-    
+    public static final String ERROR_CLIENT_NOT_RUNNING = "ZK Git - client port not open -"
+        + " client not running or wrong port configured";
+
     public static final String ERROR_UNSUPPORTED_OPERATION = "unsupported operation: ";
 
     public static final String ERROR_REMOTE_BRANCH_FAIL = "failed to set default branch on remote";
@@ -113,11 +121,11 @@ public final class AppConfig {
     public static final String STATUS_REQUEST_FINISH = "ZK Git - retrieval and decryption completed";
 
     public static final String STATUS_REQUEST_UPTODATE = "ZK Git - already up to date";
-    
+
     public static final String STATUS_ZKGIT_START = "ZK Git - start";
 
     public static final String STATUS_ZKGIT_FINISH = "ZK Git - completed";
-    
+
     public static final String STATUS_NO_DEFAULT_BRANCH = "no default branch on remote";
 
     public static final String STATUS_DOWNLOADED = "downloaded: ";

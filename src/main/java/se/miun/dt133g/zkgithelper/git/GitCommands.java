@@ -15,26 +15,28 @@ import java.util.ArrayList;
 import java.util.List;
 import java.net.URISyntaxException;
 
+/**
+ * Utility class for common Git operations using JGit.
+ * @author Leif Rogell
+ */
 public final class GitCommands {
 
     private static final String EMPTY_TREE_HASH = "4b825dc642cb6eb9a060e54bf8d69288fbee4904";
 
+    /**
+     * Constructor for the GitCommands class.
+     */
     public GitCommands() { }
 
-    /*public boolean isAncestor(final String ancestor,
-                              final String ref,
-                              final Repository repository)
-        throws IOException {
-        try (RevWalk walk = new RevWalk(repository)) {
-            ObjectId ancestorId = repository.resolve(ancestor);
-            ObjectId refId = repository.resolve(ref);
-            RevCommit ancestorCommit = walk.parseCommit(ancestorId);
-            RevCommit refCommit = walk.parseCommit(refId);
-            return walk.isMergedInto(ancestorCommit, refCommit);
-        }
-        }*/
-
-    public boolean isAncestor(final ObjectId ancestorId,
+    /**
+     * Checks if one commit is an ancestor of another.
+     * @param ancestorId the possible ancestor commit ID
+     * @param refId the target commit ID
+     * @param repository the repository to check in
+     * @return true if ancestorId is an ancestor of refId
+     * @throws IOException if Git objects cannot be read
+     */
+    protected boolean isAncestor(final ObjectId ancestorId,
                               final ObjectId refId,
                               final Repository repository)
         throws IOException {
@@ -46,7 +48,14 @@ public final class GitCommands {
         }
     }
 
-    public boolean objectExists(final String sha,
+    /**
+     * Checks if a Git object with the given SHA exists.
+     * @param sha the SHA-1 hash
+     * @param repository the repository to search
+     * @return true if the object exists
+     * @throws IOException if the repository cannot be accessed
+     */
+    protected boolean objectExists(final String sha,
                                 final Repository repository)
         throws IOException {
         ObjectId objectId = repository.resolve(sha);
@@ -54,7 +63,14 @@ public final class GitCommands {
             && repository.getObjectDatabase().has(objectId);
     }
 
-    public boolean historyExists(final String sha,
+    /**
+     * Checks if commit history exists for a given SHA.
+     * @param sha the SHA-1 of the commit
+     * @param repository the repository to check
+     * @return true if history exists
+     * @throws IOException if the commit cannot be resolved
+     */
+    protected boolean historyExists(final String sha,
                                  final Repository repository)
         throws IOException {
         try (RevWalk walk = new RevWalk(repository)) {
@@ -67,14 +83,28 @@ public final class GitCommands {
         }
     }
 
-    public String refValue(final String ref,
+    /**
+     * Gets the SHA-1 value of a ref.
+     * @param ref the ref name (e.g., refs/heads/main)
+     * @param repository the repository to look in
+     * @return SHA-1 string or null if not found
+     * @throws IOException if the ref cannot be resolved
+     */
+    protected String refValue(final String ref,
                            final Repository repository)
         throws IOException {
         ObjectId refId = repository.resolve(ref);
         return refId != null ? refId.name() : null;
     }
 
-    public String symbolicRefValue(final String name,
+    /**
+     * Gets the target of a symbolic reference.
+     * @param name the symbolic ref name (e.g., HEAD)
+     * @param repository the repository to query
+     * @return the target ref name or null
+     * @throws IOException if the ref cannot be read
+     */
+    protected String symbolicRefValue(final String name,
                                    final Repository repository)
         throws IOException {
         Ref ref = repository.findRef(name);
@@ -83,7 +113,14 @@ public final class GitCommands {
             : null;
     }
 
-    public String objectKind(final String sha,
+    /**
+     * Gets the type of a Git object (commit, tree, blob, tag).
+     * @param sha the SHA-1 hash of the object
+     * @param repository the repository to check
+     * @return the object type as a string or null
+     * @throws IOException if the object cannot be parsed
+     */
+    protected String objectKind(final String sha,
                              final Repository repository)
         throws IOException {
         ObjectId objectId = repository.resolve(sha);
@@ -98,7 +135,15 @@ public final class GitCommands {
         }
     }
 
-    public byte[] objectData(final String sha,
+    /**
+     * Gets the raw byte data of a Git object.
+     * @param sha the SHA-1 of the object
+     * @param kind the object type (unused)
+     * @param repository the repository to read from
+     * @return the object data or null
+     * @throws IOException if the object cannot be read
+     */
+    protected byte[] objectData(final String sha,
                              final String kind,
                              final Repository repository)
         throws IOException {
@@ -110,11 +155,19 @@ public final class GitCommands {
         ObjectLoader loader = repository.open(objectId);
         try {
             return loader.getBytes();
-        } finally {
+        } catch (Exception e) {
+            return null;
         }
     }
 
-    public String getRemoteUrl(final String name,
+    /**
+     * Gets the URL of a remote by name.
+     * @param name the remote name (e.g., origin)
+     * @param repository the repository to check
+     * @return the remote URL or null
+     * @throws IOException if the remote cannot be parsed
+     */
+    protected String getRemoteUrl(final String name,
                                final Repository repository)
         throws IOException {
         try {
@@ -131,7 +184,15 @@ public final class GitCommands {
         }
     }
 
-    public List<String> listObjects(final String ref,
+    /**
+     * Lists all Git object IDs reachable from a ref, excluding given objects.
+     * @param ref the starting ref (e.g., branch or commit)
+     * @param exclude list of object IDs to skip
+     * @param repository the repository to walk
+     * @return list of reachable object IDs
+     * @throws IOException if traversal fails
+     */
+    protected List<String> listObjects(final String ref,
                                     final List<String> exclude,
                                     final Repository repository)
         throws IOException {
@@ -154,7 +215,14 @@ public final class GitCommands {
         return objects;
     }
 
-    public List<String> referencedObjects(final String sha,
+    /**
+     * Gets the tree and parent commits referenced by a commit.
+     * @param sha the SHA-1 of the commit
+     * @param repository the repository to inspect
+     * @return list of referenced object SHAs
+     * @throws IOException if parsing fails
+     */
+    protected List<String> referencedObjects(final String sha,
                                           final Repository repository)
         throws IOException {
         List<String> objs = new ArrayList<>();
