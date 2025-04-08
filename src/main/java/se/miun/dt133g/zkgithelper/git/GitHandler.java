@@ -5,11 +5,16 @@ import se.miun.dt133g.zkgithelper.support.AppConfig;
 import se.miun.dt133g.zkgithelper.support.IoUtils;
 
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.PushCommand;
+import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RepositoryBuilder;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.ProgressMonitor;
+import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
@@ -71,17 +76,32 @@ public final class GitHandler {
      */
     public void setTmpRepoPath(final String path) {
         this.tmpRepoPath = path;
-        try {
-            this.tmpRepository = new FileRepositoryBuilder()
-                .setGitDir(new File(path))
-                .readEnvironment()
-                .findGitDir()
-                .build();
-            this.tmpGit = new Git(tmpRepository);
 
+        try {
+            File repoDir = new File(path);
+
+            if (repoDir.exists()) {
+                IoUtils.INSTANCE.trace("repoDir exists");
+            }
+
+            if (isBareRepo(path)) {
+                IoUtils.INSTANCE.trace("repo is bare");
+            }
+
+            if (repoDir.exists() && isBareRepo(path)) {
+                // Open the existing repository
+                this.tmpGit = Git.open(repoDir);
+                IoUtils.INSTANCE.trace("Opened existing repository at: " + path);
+            } else {
+                // Initialize a new bare repository if it doesn't exist
+                repoDir.mkdirs();
+                this.tmpGit = Git.init().setDirectory(repoDir).setBare(true).call();
+                IoUtils.INSTANCE.trace("Initialized new bare repository at: " + path);
+            }
+        } catch (GitAPIException e) {
+            IoUtils.INSTANCE.fatal("Failed to initialize or open a repository: " + e.getMessage());
         } catch (IOException e) {
-            IoUtils.INSTANCE.fatal("Failed to set up repository: "
-                                   + e.getMessage());
+            IoUtils.INSTANCE.fatal("Failed to check or create repository: " + e.getMessage());
         }
     }
 
@@ -104,6 +124,69 @@ public final class GitHandler {
                                    + e.getMessage());
         }
     }
+
+    /**
+     * Pushes changes from the local repository to a specified bare repository.
+     * This method first checks if the target repository is a bare repository. If not, it logs a fatal error.
+     * If the repository is bare, it adds the remote, sets up the push command, and performs the push operation.
+     * The progress of the push is monitored during the process.
+     */
+    public void pushToBareRepo() {
+        Iterable<PushResult> pushResults = null;
+        if (!isBareRepo(tmpRepoPath)) {
+            IoUtils.INSTANCE.fatal("Error: The repository at " + tmpRepoPath + " is not a bare repository.");
+            return;
+        }
+        try (Git git = Git.open(new File(repoPath))) {
+            git.remoteAdd()
+                .setName("origin")
+                .setUri(new URIish("file://" + tmpRepoPath))
+                .call();
+            PushCommand pushCommand = git.push();
+            pushCommand.setRemote("origin");
+
+            ProgressMonitor progressMonitor = new SimpleProgressMonitor();
+            pushCommand.setProgressMonitor(progressMonitor);
+
+            pushResults = pushCommand.call();
+        } catch (Exception e) {
+            IoUtils.INSTANCE.trace(e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Checks if the specified Git repository is a bare repository.
+     * @param repoPath the path to the repository directory.
+     * @return {@code true} if the repository is bare, {@code false} otherwise.
+     */
+    public boolean isBareRepo(final String repoPath) {
+        try {
+            File repoDir = new File(repoPath);
+
+            if (!repoDir.exists() || !repoDir.isDirectory()) {
+                IoUtils.INSTANCE.fatal("The directory is not accessible or doesn't exist.");
+                return false;
+            }
+
+            Repository repository = new RepositoryBuilder()
+                .setGitDir(new File(repoPath))
+                .readEnvironment()
+                .findGitDir()
+                .build();
+
+            if (repository.isBare() && repository.getDirectory().exists()) {
+                File refsDir = new File(repository.getDirectory(), "refs");
+                return refsDir.exists() && refsDir.isDirectory();
+            }
+
+            return false;
+        } catch (IOException e) {
+            IoUtils.INSTANCE.trace("Error checking if repository is bare: " + e.getMessage());
+            return false;
+        }
+    }
+
 
     /**
      * Extracts the name of a repository from its URL.
@@ -175,10 +258,26 @@ public final class GitHandler {
         String src = parts[1].split(AppConfig.COLON_SEPARATOR)[0].replaceFirst("^\\+", "");
         String dst = parts[1].split(AppConfig.COLON_SEPARATOR)[1];
 
-        try {
+        pushToBareRepo();
+
+        String response = GitConnection.INSTANCE.sendFile(repoPath,
+                                                          calculateRepoSignature(true));
+
+        if (response == null
+            || !response.contains(AppConfig.COMMAND_SUCCESS)) {
+            IoUtils.INSTANCE.fatal(AppConfig.ERROR_REPO_TRANSFER_FAILED
+                                   + line);
+        } else {
+            IoUtils.INSTANCE.trace(AppConfig.STATUS_SEND_FINISH);
+        }
+
+        IoUtils.INSTANCE.write(AppConfig.GIT_END);
+
+        /*try {
             if (src.equals(AppConfig.GIT_END)) {
                 delete(dst);
             } else {
+
                 copyAllObjects(Paths.get(repository.getDirectory().toString(), AppConfig.GIT_OBJECTS),
                                Paths.get(tmpRepoPath, AppConfig.GIT_OBJECTS));
                 push(src, dst);
@@ -206,7 +305,7 @@ public final class GitHandler {
             IoUtils.INSTANCE.write(AppConfig.GIT_END);
         } catch (IOException e) {
             IoUtils.INSTANCE.fatal("push failed");
-        }
+            }*/
     }
 
     /**

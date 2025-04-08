@@ -36,8 +36,8 @@ public final class ZkGitHelper {
 
         GitHandler.INSTANCE.setRepoName(repoName);
         GitHandler.INSTANCE.setRepoPath(repoPath);
+        //GitConnection.INSTANCE.cleanTmp(repoName);
         GitHandler.INSTANCE.setTmpRepoPath(FileUtils.INSTANCE.createTmpDirectory(repoName));
-        GitConnection.INSTANCE.cleanTmp(repoName);
 
         while (true) {
             String line = scanner.nextLine();
@@ -60,7 +60,7 @@ public final class ZkGitHelper {
                                        + line);
             }
         }
-        GitConnection.INSTANCE.cleanTmp(repoName);
+        //GitConnection.INSTANCE.cleanTmp(repoName);
         IoUtils.INSTANCE.trace(AppConfig.STATUS_ZKGIT_FINISH);
     }
 }
