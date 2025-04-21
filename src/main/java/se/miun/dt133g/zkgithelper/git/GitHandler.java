@@ -34,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.stream.Collectors;
@@ -213,12 +214,14 @@ public final class GitHandler {
      */
     public void doList(final String line) {
         boolean forPush = line.contains(AppConfig.GIT_FOR_PUSH);
+        IoUtils.INSTANCE.trace(line);
+        IoUtils.INSTANCE.trace(Boolean.toString(forPush));
 
         try {
             if (GitConnection.INSTANCE.requestFile(repoPath,
-                                                   calculateRepoSignature(!forPush))
+                                                   calculateRepoSignature(forPush))
                 .contains(AppConfig.STATUS_REPO_UPTODATE)) {
-                IoUtils.INSTANCE.fatal(AppConfig.GIT_END);
+                IoUtils.INSTANCE.fatal(null);
                 return;
             }
 
@@ -258,13 +261,27 @@ public final class GitHandler {
         String src = parts[1].split(AppConfig.COLON_SEPARATOR)[0].replaceFirst("^\\+", "");
         String dst = parts[1].split(AppConfig.COLON_SEPARATOR)[1];
 
-        pushToBareRepo();
+        Thread pushThread = new Thread(() -> pushToBareRepo());
+        pushThread.start();
 
-        String response = GitConnection.INSTANCE.sendFile(repoPath,
-                                                          calculateRepoSignature(true));
+        // Start sendFile immediately in main thread or another thread
+        AtomicReference<String> responseRef = new AtomicReference<>();
+        try {
+            Thread sendThread = new Thread(() -> {
+                    String response = GitConnection.INSTANCE.sendFile(repoPath, calculateRepoSignature(true));
+                    responseRef.set(response);
+            });
+            sendThread.start();
 
-        if (response == null
-            || !response.contains(AppConfig.COMMAND_SUCCESS)) {
+            pushThread.join();
+            sendThread.join();
+        } catch (InterruptedException e) {
+            IoUtils.INSTANCE.fatal(AppConfig.ERROR_REPO_TRANSFER_FAILED
+                                   + e.getMessage());            
+        }
+
+        if (responseRef.get() == null
+            || !responseRef.get().contains(AppConfig.COMMAND_SUCCESS)) {
             IoUtils.INSTANCE.fatal(AppConfig.ERROR_REPO_TRANSFER_FAILED
                                    + line);
         } else {

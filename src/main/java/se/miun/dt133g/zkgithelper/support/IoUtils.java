@@ -73,7 +73,9 @@ public final class IoUtils {
      * @param message the error message to log
      */
     public void fatal(final String message) {
-        trace(message);
+        if (message != null) {
+            trace(AppConfig.ERROR + message);
+        }
         System.exit(1);
     }
 

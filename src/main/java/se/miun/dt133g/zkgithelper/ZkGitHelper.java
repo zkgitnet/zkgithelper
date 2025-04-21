@@ -39,26 +39,30 @@ public final class ZkGitHelper {
         //GitConnection.INSTANCE.cleanTmp(repoName);
         GitHandler.INSTANCE.setTmpRepoPath(FileUtils.INSTANCE.createTmpDirectory(repoName));
 
-        while (true) {
-            String line = scanner.nextLine();
+        try {
+            while (true) {
+                String line = scanner.nextLine();
 
-            if (line.equals(AppConfig.GIT_CAPABILITIES)) {
-                IoUtils.INSTANCE.write(AppConfig.GIT_PUSH);
-                IoUtils.INSTANCE.write(AppConfig.GIT_FETCH);
-                IoUtils.INSTANCE.write(AppConfig.GIT_END);
-            } else if (line.startsWith(AppConfig.GIT_LIST)) {
-                GitHandler.INSTANCE.doList(line);
-            } else if (line.startsWith(AppConfig.GIT_PUSH)) {
-                IoUtils.INSTANCE.trace(AppConfig.STATUS_BEGIN_PUSH);
-                GitHandler.INSTANCE.doPush(line);
-            } else if (line.startsWith(AppConfig.GIT_FETCH)) {
-                GitHandler.INSTANCE.doFetch(line);
-            } else if (line.equals(AppConfig.GIT_END)) {
-                break;
-            } else {
-                IoUtils.INSTANCE.fatal(AppConfig.ERROR_UNSUPPORTED_OPERATION
-                                       + line);
+                if (line.equals(AppConfig.GIT_CAPABILITIES)) {
+                    IoUtils.INSTANCE.write(AppConfig.GIT_PUSH);
+                    IoUtils.INSTANCE.write(AppConfig.GIT_FETCH);
+                    IoUtils.INSTANCE.write(AppConfig.GIT_END);
+                } else if (line.startsWith(AppConfig.GIT_LIST)) {
+                    GitHandler.INSTANCE.doList(line);
+                } else if (line.startsWith(AppConfig.GIT_PUSH)) {
+                    IoUtils.INSTANCE.trace(AppConfig.STATUS_BEGIN_PUSH);
+                    GitHandler.INSTANCE.doPush(line);
+                } else if (line.startsWith(AppConfig.GIT_FETCH)) {
+                    GitHandler.INSTANCE.doFetch(line);
+                } else if (line.equals(AppConfig.GIT_END)) {
+                    break;
+                } else {
+                    IoUtils.INSTANCE.fatal(AppConfig.ERROR_UNSUPPORTED_OPERATION
+                                           + line);
+                }
             }
+        } catch (Exception e) {
+            IoUtils.INSTANCE.fatal(e.getMessage());
         }
         //GitConnection.INSTANCE.cleanTmp(repoName);
         IoUtils.INSTANCE.trace(AppConfig.STATUS_ZKGIT_FINISH);
