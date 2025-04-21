@@ -220,7 +220,7 @@ public final class GitHandler {
         try {
             if (GitConnection.INSTANCE.requestFile(repoPath,
                                                    calculateRepoSignature(forPush))
-                .contains(AppConfig.STATUS_REPO_UPTODATE)) {
+                .contains(AppConfig.STATUS_REPO_UPTODATE) && !forPush) {
                 IoUtils.INSTANCE.fatal(null);
                 return;
             }
@@ -268,7 +268,7 @@ public final class GitHandler {
         AtomicReference<String> responseRef = new AtomicReference<>();
         try {
             Thread sendThread = new Thread(() -> {
-                    String response = GitConnection.INSTANCE.sendFile(repoPath, calculateRepoSignature(true));
+                    String response = GitConnection.INSTANCE.sendFile(repoPath, calculateRepoSignature(false));
                     responseRef.set(response);
             });
             sendThread.start();
@@ -588,20 +588,23 @@ public final class GitHandler {
      * @param includeCurrentCommit whether to include the current commit in the hash
      * @return a hex string of the calculated signature, or null if computation fails
      */
-    private String calculateRepoSignature(final boolean includeCurrentCommit) {
+    private String calculateRepoSignature(final boolean forPush) {
+        IoUtils.INSTANCE.trace("calcRepo: " + Boolean.toString(forPush));
         try (RevWalk revWalk = new RevWalk(repository)) {
             Iterable<RevCommit> commits = git.log().call();
 
             List<String> commitHashes = StreamSupport.stream(commits.spliterator(), false)
-                //.skip(includeCurrentCommit ? 0 : 1)
+                .skip(forPush ? 1 : 0)
                 .map(RevCommit::getId)
                 .map(ObjectId::getName)
+                //.limit(5) 
                 .sorted()
                 .collect(Collectors.toList());
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             IoUtils.INSTANCE.trace("Size: " + commitHashes.size());
             for (String hash : commitHashes) {
+                //IoUtils.INSTANCE.trace(hash);
                 digest.update(hash.getBytes());
             }
             byte[] combinedHashBytes = digest.digest();
