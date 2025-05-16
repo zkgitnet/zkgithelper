@@ -42,6 +42,7 @@ public final class ZkGitHelper {
         try {
             while (true) {
                 String line = scanner.nextLine();
+                IoUtils.INSTANCE.trace("input: " + line);
 
                 if (line.equals(AppConfig.GIT_CAPABILITIES)) {
                     IoUtils.INSTANCE.write(AppConfig.GIT_PUSH);

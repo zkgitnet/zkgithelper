@@ -257,6 +257,7 @@ public final class GitHandler {
      * @param line the command input line containing source and destination references
      */
     public void doPush(final String line) {
+        IoUtils.INSTANCE.trace("push: " + line);
         String[] parts = line.split(AppConfig.SPACE_SEPARATOR);
         String src = parts[1].split(AppConfig.COLON_SEPARATOR)[0].replaceFirst("^\\+", "");
         String dst = parts[1].split(AppConfig.COLON_SEPARATOR)[1];
